@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Changer un vêtement</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .container {
+      background: white;
+      color: black;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      width: 80%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #2575fc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1a5ed9;
+    }
+
+    canvas {
+      max-width: 100%;
+      margin-top: 20px;
+      border-radius: 10px;
+      cursor: crosshair;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Changer un vêtement</h1>
+
+  <div class="container">
+    <input type="file" id="imageUpload" accept="image/*">
+    <br>
+    <input type="color" id="colorPicker" value="#ff0000">
+    <br>
+    <button onclick="applyColor()">Appliquer la couleur</button>
+    <button onclick="activateEraser()">Gomme (transparent)</button>
+    <button onclick="resetImage()">Réinitialiser</button>
+
+    <div class="result" id="resultText"></div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script>
+    const imageUpload = document.getElementById("imageUpload");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const colorPicker = document.getElementById("colorPicker");
+    const resultText = document.getElementById("resultText");
+
+    let img = new Image();
+    let drawing = false;
+    let mode = "none"; // "color" ou "eraser"
+
+    // Charger image
+    imageUpload.addEventListener("change", function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          img.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    img.onload = function() {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      resultText.innerHTML = "Image chargée.";
+    };
+
+    // Événements pour le pinceau / gomme
+    canvas.addEventListener("mousedown", () => drawing = true);
+    canvas.addEventListener("mouseup", () => {
+      drawing = false;
+      ctx.beginPath();
+    });
+    canvas.addEventListener("mouseleave", () => drawing = false);
+    canvas.addEventListener("mousemove", draw);
+
+    function draw(e) {
+      if (!drawing) return;
+
+      if(mode === "eraser") {
+        ctx.globalCompositeOperation = "destination-out"; // gomme
+        ctx.lineWidth = 40;
+        ctx.lineCap = "round";
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      } else if(mode === "color") {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = colorPicker.value;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(e.offsetX, e.offsetY, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Activer le mode couleur
+    function applyColor() {
+      mode = "color";
+      resultText.innerHTML = "Mode couleur activé. Clique et glisse sur le vêtement.";
+    }
+
+    // Activer le mode gomme
+    function activateEraser() {
+      mode = "eraser";
+      resultText.innerHTML = "Mode gomme activé. Clique et glisse pour rendre transparent.";
+    }
+
+    // Réinitialiser l'image originale
+    function resetImage() {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      resultText.innerHTML = "Image réinitialisée.";
+      mode = "none";
+    }
+  </script>
+
+</body>
+</html>
